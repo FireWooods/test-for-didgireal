@@ -7,26 +7,30 @@ async function updateBalanceByUserId(id, amount) {
     ]);
 }
 
+async function findUserById(id) {
+    const user = await db.query(`SELECT * FROM users where id = $1`, [id]);
+
+    const userById = user.rows[0];
+
+    return userById;
+}
+
 class ActionsController {
-    async pushare(req, res) {
+    async updateBalance(req, res) {
         try {
             const userId = req.params.id;
             const { amount, actions } = req.body;
 
-            const user = await db.query(`SELECT * FROM users where id = $1`, [
-                userId,
-            ]);
+            const user = await findUserById(userId);
 
-            const userById = user.rows[0];
-
-            if (!userById) {
+            if (!user) {
                 res.status(400).send({
                     success: false,
                     message: 'User id not found',
                 });
             }
 
-            if (userById.balance <= 0 || userById.balance < amount) {
+            if (user.balance <= 0 || user.balance < amount) {
                 res.status(400).send({
                     success: false,
                     message: 'There are not enough funds on your balance',
@@ -39,7 +43,7 @@ class ActionsController {
 
                 const actionsByUserId = newActions.rows[0];
 
-                updateBalanceByUserId(
+                await updateBalanceByUserId(
                     actionsByUserId.user_id,
                     actionsByUserId.amount
                 );
