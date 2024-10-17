@@ -26,14 +26,12 @@ class ActionsController {
                 });
             } else {
                 const result = await db.query(
-                    `WITH inserted_actions AS (INSERT INTO history_of_actions (user_id, actions, amount) values ((SELECT id FROM users where id = $1),$2,$3) RETURNING *),
-                    update_balance AS (UPDATE users set balance = balance - $3 where id = $1 RETURNING *)
-                    SELECT (SELECT actions FROM inserted_actions) AS actions,
-                           (SELECT id FROM update_balance) AS user`,
+                    `WITH inserted_actions AS (INSERT INTO history_of_actions (user_id, actions, amount) values ((SELECT id FROM users where id = $1),$2,$3) RETURNING actions),
+                    update_balance AS (UPDATE users set balance = balance - $3 where id = $1 RETURNING id)
+                    SELECT (SELECT * FROM update_balance) AS user,
+                           (SELECT * FROM inserted_actions) AS actions`,
                     [userId, 'purchase', amount]
                 );
-
-                console.log(result.rows);
 
                 res.send({ success: true });
             }
