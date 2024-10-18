@@ -1,12 +1,5 @@
 const db = require('../db');
 
-async function updateBalanceByUserId(id, amount) {
-    await db.query(`UPDATE users set balance = balance - $2 where id = $1`, [
-        id,
-        amount,
-    ]);
-}
-
 async function findUserById(id) {
     const user = await db.query(`SELECT * FROM users where id = $1`, [id]);
 
@@ -36,18 +29,16 @@ class ActionsController {
                     message: 'There are not enough funds on your balance',
                 });
             } else {
-                const newActions = await db.query(
-                    `INSERT INTO history_of_actions (user_id, actions, amount) values ((SELECT id FROM users where id = $1),$2,$3) RETURNING *`,
-                    [userId, actions, amount]
+                await db.query(
+                    `INSERT INTO history_of_actions (user_id, actions, amount, ts) values ((SELECT id FROM users where id = $1), $2, $3, $4)`,
+                    [userId, actions, amount, new Date()]
                 );
 
-                const actionsByUserId = newActions.rows[0];
-
-                await updateBalanceByUserId(
-                    actionsByUserId.user_id,
-                    actionsByUserId.amount
-                );
-
+                await db.query(`UPDATE users set balance = balance - $2 where id = $1`, [
+                    userId,
+                    amount,
+                ]);
+               
                 res.send({ success: true });
             }
         } catch (e) {
